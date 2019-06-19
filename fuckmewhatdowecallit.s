@@ -13,7 +13,7 @@ start:
 	mov si, text_string	; Put string position into SI
 	call print_string	; Call our string-printing routine
 
-        mov dl, 10h
+        mov dl, 0xff
 .loop:
         mov ah, 00h		; int 16h Read key press
         int 16h			; AH is the keyboard scan code and AL is the ascii code

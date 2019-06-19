@@ -5,7 +5,7 @@ white_rabbit.flp: white_rabbit.bin
 	dd status=noxfer conv=notrunc if=white_rabbit.bin of=white_rabbit.flp
 
 qemu: white_rabbit.flp
-	qemu-system-i386 -fda white_rabbit.flp
+	qemu-system-i386 -drive format=raw,file=white_rabbit.flp 
 
 run: qemu
 
