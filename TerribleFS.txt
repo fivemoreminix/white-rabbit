@@ -1,0 +1,8 @@
+TerribleFS is a simple-to-use filesystem, whos metadata consists of a length-prefixed vector of sets of 3 values. TerribleFS, and can not make any reliability or atomicity garuntees. Just don't turn off your computer!
+
+first byte is the number of files in this filesystem
+then 255 file entries (even if the first byte isn't 255):
+  8 bytes for the ascii file name
+  double word (4 bytes) for the file offset, starting from **the beginning of the drive** (then we can make the MBR a writable file...)
+  double word (4 bytes) for the file size
+then file data...

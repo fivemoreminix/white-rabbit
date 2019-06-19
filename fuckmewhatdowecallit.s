@@ -37,7 +37,7 @@ start:
 	jmp $		        ; Jump here - infinite loop!
 
 
-	text_string db 'This is my cool new OS!', $0A, $0D, 0
+text_string:    db 'This is my cool new OS!', $0A, $0D, 0
 
         ;; Input: si (start index of string), bh (page number), bl (color)
         ;; Clobbers: ah, al, si
@@ -54,6 +54,7 @@ print_string:			; Routine: output string in SI to screen
 .done:
 	ret
 
+footer:
 	times 510-($-$$) db 0	; Pad remainder of boot sector with 0s
 	dw 0xAA55		     ; The standard PC boot signature
 
