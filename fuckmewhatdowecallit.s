@@ -18,21 +18,68 @@ start:
 
         ;; With the following I hope to print the IVT
         ;; bx is apparently the only register you can use for an offset like [es:bx]
-        ;; and bh/bl is used for the bios teletype print so we have to juggle some registers
+        ;; and bh/bl is used for the bios teletype print args so we have to
+        ;; juggle some registers
         xor dx, dx
         mov es, dx
         ;; dx: index counter; bx: params
         xchg dx, bx
         ;; bx: index
 .hexprintloop:
-        mov al, [es:bx]
         xchg dx, bx
         ;; dx: index
+
+        mov al, dl              ; Print the interrupt id
         call print_hex
+
+        mov al, ":"             ; Print a colon
+        int 10h                 ; print_hex sets AH to what we want
+
+        mov al, " "             ; Print a space
+        int 10h
+        
         xchg dx, bx
         ;; bx: index
+        shl bx, 2
+        ;; bx: index*4
+        mov al, [es:bx+0]
+        xchg dx, bx
+        ;; dx: index*4
+        call print_hex
+        xchg dx, bx
+        ;; bx: index*4
+
+        mov al, [es:bx+1]
+        xchg dx, bx
+        ;; dx: index*4
+        call print_hex
+        xchg dx, bx
+        ;; bx: index*4
+
+        mov al, [es:bx+2]
+        xchg dx, bx
+        ;; dx: index*4
+        call print_hex
+        xchg dx, bx
+        ;; bx: index*4
+
+        mov al, [es:bx+3]
+        xchg dx, bx
+        ;; dx: index*4
+        call print_hex
+
+        mov al, $0A             ; Print a new line
+        int 10h
+        mov al, $0D             ; And a carriage return
+        int 10h
+
+        xchg dx, bx
+        ;; bx: index*4
+
+        shr bx, 2
+        ;; bx: index
         inc bx
-        cmp bx, $400
+        cmp bx, 24
         jne .hexprintloop
 
 .loop:
@@ -75,7 +122,7 @@ print_string:			; Routine: output string in SI to screen
 	ret
 
         ;; Input: al (byte to print), bh (page number), bl (color)
-        ;; Clobbers: ah, al
+        ;; Clobbers: ah(set to 0Eh), al
 print_hex:
         mov ah, al
         shr ah, 4
