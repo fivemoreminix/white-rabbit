@@ -8,5 +8,5 @@ then file data...
 
 first byte special meanings:
 0x80: End of list
-0x81: Unused
+0x81: Unused entry
 0x82 - 0xFF: Reserved
