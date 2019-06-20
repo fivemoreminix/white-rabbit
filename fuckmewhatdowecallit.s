@@ -19,25 +19,21 @@ start:
         ;; With the following I hope to print the IVT
         ;; bx is apparently the only register you can use for an offset like [es:bx]
         ;; and bh/bl is used for the bios teletype print so we have to juggle some registers
-        push bx
-        xor bx, bx
-        mov dx, 0
+        xor dx, dx
         mov es, dx
+        ;; dx: index counter; bx: params
+        xchg dx, bx
+        ;; bx: index
 .hexprintloop:
         mov al, [es:bx]
-        pop dx
-        push bx
-        mov bx, dx
+        xchg dx, bx
+        ;; dx: index
         call print_hex
-        pop dx
-        push bx
-        mov bx, dx
+        xchg dx, bx
+        ;; bx: index
         inc bx
         cmp bx, $400
         jne .hexprintloop
-
-        pop dx
-        xor dx, dx
 
 .loop:
         mov ah, 00h		; int 16h Read key press
