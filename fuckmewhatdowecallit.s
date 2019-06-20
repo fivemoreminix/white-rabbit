@@ -15,6 +15,30 @@ start:
 
         mov bh, 0h              ; page number (???)
         mov bl, 0Fh             ; white-on-black color
+
+        ;; With the following I hope to print the IVT
+        ;; bx is apparently the only register you can use for an offset like [es:bx]
+        ;; and bh/bl is used for the bios teletype print so we have to juggle some registers
+        push bx
+        xor bx, bx
+        mov dx, 0
+        mov es, dx
+.hexprintloop:
+        mov al, [es:bx]
+        pop dx
+        push bx
+        mov bx, dx
+        call print_hex
+        pop dx
+        push bx
+        mov bx, dx
+        inc bx
+        cmp bx, $400
+        jne .hexprintloop
+
+        pop dx
+        xor dx, dx
+
 .loop:
         mov ah, 00h		; int 16h Read key press
         int 16h			; AH is the keyboard scan code and AL is the ascii code
@@ -53,6 +77,34 @@ print_string:			; Routine: output string in SI to screen
 
 .done:
 	ret
+
+        ;; Input: al (byte to print), bh (page number), bl (color)
+        ;; Clobbers: ah, al
+print_hex:
+        mov ah, al
+        shr ah, 4
+        and al, $0F
+        add ax, "00"
+        
+        cmp ah, $3A
+        jl .compare_al
+        add ah, "A"-":"
+
+.compare_al:
+        cmp al, $3A
+        jl .print
+        add al, "A"-":"
+
+.print:
+        push ax
+        xchg al, ah
+        mov ah, 0Eh
+        int 10h
+
+        pop ax
+        mov ah, 0Eh
+        int 10h
+        ret
 
 footer:
 	times 510-($-$$) db 0	; Pad remainder of boot sector with 0s
