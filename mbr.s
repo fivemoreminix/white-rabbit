@@ -15,7 +15,7 @@ main:
         mov word [dap.num_blocks], 1
         mov word [dap.transfer_buffer_segment], ds
         mov word [dap.transfer_buffer_offset], 512
-        mov dword [dap.start_block_low], 1
+        mov dword [dap.start_block_low], 0
         mov dword [dap.start_block_high], 0
         mov di, 1
         call debug
@@ -149,7 +149,7 @@ end:
 drive_read:
         mov si, dap
         mov ah, 42h             ; Extended read sectors from drive
-        mov dl, 0               ; We're probably the first drive, right?
+        mov dl, 80              ; We're probably the first drive, right? (high bit means hard drive, not floppy)
         int 13h
         ret
 
@@ -207,7 +207,7 @@ print_hex_debug:
         ;; add sp, 6
         ;; CLOBBER: bp
 print_hex_block:
-        push ax
+        push ax                 ; As this is a debug function, I'm trying to save registers so it can be used "anywhere"
         push bx
         push dx
         push es
@@ -221,39 +221,43 @@ print_hex_block:
         ;; 10:length(word),
         ;; 12:pointer(word)
         ;; 14:segment(word)
+
+        ;; This is to grab variables passed on the stack without having to pop everything
+        ;; See https://stackoverflow.com/questions/13562767/accessing-the-stack-without-popping/13564868#13564868
         mov bp, sp
-        mov es, [bp+14]
-        mov bx, [bp+12]
+        mov es, [bp+14]         ; copy segment into es
+        mov bx, [bp+12]         ; copy pointer into bx
         mov dx, bx
-        add dx, [bp+10]
+        add dx, [bp+10]         ; add the length to dx; dx should now point to the *end* of what we're copying
 .loop:   
         mov al, [es:bx]
-        push bx
-        mov bh, 0
-        mov bl, 0Fh
+        push bx                 ; Save bx in the stack so we can pass parameters in bh/bl
+        mov bh, 0               ; Page number
+        mov bl, 0Fh             ; Color: white on black
         call print_hex
         pop bx
 
         mov ax, bx
-        and ax, 0x0F
+        and ax, 0x0F            ; This is effectively `if ptr % 16 == 15` or so I hope
         cmp ax, 0x0F
         jne .loopinc
-        mov al, $0D
+        mov al, $0D             ; Print a carriage return
         mov ah, 0Eh
         push bx
         mov bh, 0
         mov bl, 0Fh
         int 10h
-        mov al, $0A
+        mov al, $0A             ; Print a new line
         int 10h
         pop bx
         
 .loopinc:        
-        inc bx
+        inc bx                  ; Increment the pointer and loop until we're done
         cmp bx, dx
         jne .loop
         
         pop es
+        pop dx
         pop bx
         pop ax
         ret
