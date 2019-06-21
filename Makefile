@@ -7,7 +7,7 @@ white_rabbit.flp: mbr.bin terriblefs.bin
 	mv white_rabbit_tmp.flp white_rabbit.flp
 
 qemu: white_rabbit.flp
-	qemu-system-i386 -drive format=raw,file=white_rabbit.flp,if=ide,index=0
+	qemu-system-i386 -drive format=raw,file=white_rabbit.flp,if=ide,index=0 -chardev stdio,id=seabios -device isa-debugcon,iobase=0x402,chardev=seabios ${QEMU_OPTS}
 
 run: qemu
 

@@ -1,12 +1,14 @@
     BITS 16
 
+        jmp main
+        db 0xDE, 0xAD, 0xBE, 0xEF ; just to have an obvious indicator when I show some bytes that I'm looking at the MBR
 main:
-	mov ax, 07C0h		; Set up 4K stack space after this bootloader
+	mov ax, 0x07C0		; Set up 4K stack space after this bootloader
 	add ax, 288		; (4096 + 512) / 16 bytes per paragraph
 	mov ss, ax
 	mov sp, 4096
 
-	mov ax, 07C0h		; Set data segment to where we're loaded
+	mov ax, 0x07C0		; Set data segment to where we're loaded
 	mov ds, ax
 
         mov di, 0
@@ -19,10 +21,26 @@ main:
         mov dword [dap.start_block_high], 0
         mov di, 1
         call debug
+.do_read_drive:  
+        clc
         call drive_read
-        mov di, 2
-        call debug
 
+        jc .carry
+        mov di, 0               ;if not carry, print "00"
+        call debug
+        jmp .after_carry
+.carry:  
+        mov di, 0x0C             ;else, print "0C"
+        call debug
+        inc byte [drive_number]
+        jmp .do_read_drive
+.after_carry:    
+        xchg ah, al
+        mov di, ax
+        call debug
+        mov di, 0xFF
+        call debug
+        
         ;; Hopefully, the first 32 entries of TerribleFS are in memory now
         push word ds            ;segment
         push word 512           ;ptr
@@ -30,131 +48,16 @@ main:
         call print_hex_block
         add sp, 6
         mov bx, 512
-.loop:
-        mov di, 3
-        call debug
-        cmp byte [ds:bx+0], 0x80
-        je end
-        cmp byte [ds:bx+0], 0x81
-        jge .no_fn_match
-        cmp byte [ds:bx+0], "K"
-        jne .no_fn_match
-        cmp byte [ds:bx+1], "E"
-        jne .no_fn_match
-        cmp byte [ds:bx+2], "R"
-        jne .no_fn_match
-        cmp byte [ds:bx+3], "N"
-        jne .no_fn_match
-        cmp byte [ds:bx+4], "_"
-        jne .no_fn_match
-        cmp byte [ds:bx+5], "B"
-        jne .no_fn_match
-        cmp byte [ds:bx+6], "I"
-        jne .no_fn_match
-        cmp byte [ds:bx+7], "N"
-        jne .no_fn_match
 
-        ;; [ds:bx+8] now points to file sector offset dword followed by file size dword
-        jmp .found_kern
-
-.no_fn_match:       
-        add bx, 16
-        cmp bx, 1024
-        mov di, 4
-        call debug
-        jne .loop
-        mov di, 5
-        call debug
-        jmp end
-
-.found_kern:
-        mov di, 6
-        call debug
-        mov ax, [ds:bx+8]
-        mov [dap.start_block_low], ax
-        mov cx, [ds:bx+10]
-        mov [dap.start_block_low+1], cx
-        mov word [dap.start_block_high], 0
-        mov word [dap.start_block_high+1], 0
-        mov ax, [ds:bx+12]
-        mov cx, [ds:bx+14]
-        ;; AX(LS) and CX(MS) form a dword, we need to divide it by 512 (2^9)
-        ;; and then truncate to a word
-        shr ax, 9
-        shl cx, 16-9
-        or ax, cx
-
-        inc ax
-        ;; AX should now be the number of blocks to transfer,
-        ;; BX still points to the FS entry,
-        ;; CX we don't care about anymore
-
-        mov [dap.num_blocks], ax
-        mov cx, (7C00h + 4096 + 4096 + 512)/16
-        mov es, cx
-        mov [dap.transfer_buffer_segment], cx
-        mov word [dap.transfer_buffer_offset], 0
-        call drive_read
-        mov di, 7
-        call debug
-        mov ax, [ds:bx+12]
-        mov cx, [ds:bx+14]
-        ;; AX and CX are a dword again
-        
-        cmp cx, 0
-        jne $+2
-        mov ax, $0ffff           ; if the dword is >= 10000h, just set ax to FFFFh
-        
-        mov [.igtmtiaycsm+1], ax
-
-        mov ah, 0Eh
-        mov bh, 0h              ; page number (???)
-        mov bl, 0Fh             ; white-on-black color
-        xor dx, dx
-        ;; index: dx
-        xchg bx, dx
-        ;; index: bx
-.read_print_loop:      
-        mov di, 8
-        call debug
-        mov al, [es:bx]
-        xchg bx, dx
-        ;; index: dx
-        int 10h
-        xchg bx, dx
-        ;; index: bx
-        ;; do stuff
-        inc bx
-        xchg bx, ax
-        ;; index: ax
-.im_going_to_modify_this_instruction_and_you_cant_stop_me:       
-.igtmtiaycsm:    
-        cmp ax, 0x8fff          ; 0x8fff is actually a junk value that will get written over above
-        xchg bx, ax
-        ;; index: bx
-        jnz .read_print_loop
-end:
-        ;; Should probably print an error message or smth
-        mov di, 9
-        call debug
-        call debug
-        call debug
-        call debug
-        call debug
-        call debug
         jmp $
 
         ;; Input: Data in disk_address_packet
         ;; Clobber: si, ah, dl, cf, and possibly some of the data at disk_address_packet
 drive_read:
         mov si, dap
-        mov ah, 42h             ; Extended read sectors from drive
-        mov dl, 80              ; We're probably the first drive, right? (high bit means hard drive, not floppy)
-        int 13h
-        ret
-
-debug:
-        call print_hex_debug
+        mov ah, 0x42             ; Extended read sectors from drive
+        mov dl, [drive_number]  ; We're probably the first drive, right? (high bit means hard drive, not floppy)
+        int 0x13
         ret
 
         ;; Input: al (byte to print), bh (page number), bl (color)
@@ -162,39 +65,38 @@ debug:
 print_hex:
         mov ah, al
         shr ah, 4
-        and al, $0F
+        and al, 0x0F
         add ax, "00"
         
-        cmp ah, $3A
+        cmp ah, 0x3A
         jl .compare_al
         add ah, "A"-":"
 
 .compare_al:
-        cmp al, $3A
+        cmp al, 0x3A
         jl .print
         add al, "A"-":"
 
 .print:
         push ax
         xchg al, ah
-        mov ah, 0Eh
-        int 10h
+        mov ah, 0x0E
+        int 0x10
 
         pop ax
-        mov ah, 0Eh
-        int 10h
+        mov ah, 0x0E
+        int 0x10
         ret
 
+        ;; Input: lower portion of DI
+debug:  
 print_hex_debug:
         push ax
         push bx
-        push cx
-        mov cx, di
-        mov al, cl
+        mov ax, di
         mov bh, 0
-        mov bl, 0Fh
+        mov bl, 0x0F
         call print_hex
-        pop cx
         pop bx
         pop ax
         ret
@@ -233,7 +135,7 @@ print_hex_block:
         mov al, [es:bx]
         push bx                 ; Save bx in the stack so we can pass parameters in bh/bl
         mov bh, 0               ; Page number
-        mov bl, 0Fh             ; Color: white on black
+        mov bl, 0x0F             ; Color: white on black
         call print_hex
         pop bx
 
@@ -241,14 +143,14 @@ print_hex_block:
         and ax, 0x0F            ; This is effectively `if ptr % 16 == 15` or so I hope
         cmp ax, 0x0F
         jne .loopinc
-        mov al, $0D             ; Print a carriage return
-        mov ah, 0Eh
+        mov al, 0x0D             ; Print a carriage return
+        mov ah, 0x0E
         push bx
         mov bh, 0
-        mov bl, 0Fh
-        int 10h
-        mov al, $0A             ; Print a new line
-        int 10h
+        mov bl, 0x0F
+        int 0x10
+        mov al, 0x0A             ; Print a new line
+        int 0x10
         pop bx
         
 .loopinc:        
@@ -261,12 +163,14 @@ print_hex_block:
         pop bx
         pop ax
         ret
-        
+
+drive_number:
+        db 0x80
 kernel_fn:
         db "KERN_BIN"
 disk_address_packet:
 dap:    
-        db 10h                  ; size of packet
+        db 0x10                  ; size of packet
         db 0                    ; reserved
 .num_blocks:
         dw 0                    ; number of blocks to transfer
