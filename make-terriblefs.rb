@@ -24,7 +24,9 @@ FILES.each do |tfn, (rfn, conv, ss)|
   end
 end
 
-sector_offset = 0
+#first sector is mbr
+#next 8 sectors are the metadata table
+sector_offset = 9
 File.open(out_fn, "wb") do |f|
   FILES.each do |tfn, arr|
     (rfn, conv, ss) = arr
