@@ -1,6 +1,6 @@
 The White Rabbit Operating System
 =================================
-One idea lead to "hey, let's really make this a thing," so we are now neck-deep in making a minimal (and incomplete) operating system in x86 assembly for a game. Information about the game can be found in the section [*The Game*](https://github.com/asmoaesl/white-rabbit#the-game).
+One idea lead to "hey, let's really make this a thing," so we are now neck-deep in making a minimal (and incomplete) operating system in x86 assembly for a game. Information about the game can be found in the section [*The Game*](#the-game).
 
 ## Building
 ```

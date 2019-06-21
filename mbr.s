@@ -73,14 +73,45 @@ main:
         mov cx, (7C00h + 4096 + 4096 + 512)/16
         mov es, cx
         mov [dap.transfer_buffer_segment], cx
-        mov [dap.transfer_buffer_offset], 0
+        mov word [dap.transfer_buffer_offset], 0
         call drive_read
         mov ax, [ds:bx+12]
         mov cx, [ds:bx+14]
+        ;; AX and CX are a dword again
         
+        cmp cx, 0
+        jne $+2
+        mov ax, $0ffff           ; if the dword is >= 10000h, just set ax to FFFFh
+        
+        mov [.igtmtiaycsm+1], ax
+
+        mov ah, 0Eh
+        mov bh, 0h              ; page number (???)
+        mov bl, 0Fh             ; white-on-black color
+        xor dx, dx
+        ;; index: dx
+        xchg bx, dx
+        ;; index: bx
+.read_print_loop:      
+        mov al, [es:bx]
+        xchg bx, dx
+        ;; index: dx
+        int 10h
+        xchg bx, dx
+        ;; index: bx
+        ;; do stuff
+        inc bx
+        xchg bx, ax
+        ;; index: ax
+.im_going_to_modify_this_instruction_and_you_cant_stop_me:       
+.igtmtiaycsm:    
+        cmp ax, 0x8fff          ; 0x8fff is actually a junk value that will get written over above
+        xchg bx, ax
+        ;; index: bx
+        jnz .read_print_loop
 end:
         ;; Should probably print an error message or smth
-        loop $
+        jmp $
 
         ;; Input: Data in disk_address_packet
         ;; Clobber: si, ah, dl, cf, and possibly some of the data at disk_address_packet
