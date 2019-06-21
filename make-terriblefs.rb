@@ -11,7 +11,7 @@ end
 
 if ARGV[0] == "makefile"
   puts "#{out_fn}: #{FILES.values.map{|v| v[0]}.join(" ")}
-\t#{$0}"
+\truby #{$0}"
   exit 0
 end
 
