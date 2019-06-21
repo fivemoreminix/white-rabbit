@@ -30,6 +30,6 @@ When starting, you have the essentials:
 In this game, there is no goal. The best comparing game is Skyblock from Minecraft; where the player is born into a desolate world of only a tree and some grass blocks, which might be just enough, but curiosity and creativity take over, and players eventually build entire systems from nothing.
 
 ## Authors
- - (shelvacu)
+ - King Shelvacu of Shelvaculandia (shelvacu)
  - Luke I. Wilson (asmoaesl)
  - Imtiaz Ahmed (tiazahmd)
