@@ -1,4 +1,4 @@
-.PHONY: qemu run clean
+.PHONY: qemu run clean debug
 
 white_rabbit.flp: mbr.bin terriblefs.bin
 	dd status=noxfer if=/dev/zero of=white_rabbit_tmp.flp bs=1K count=1440
@@ -9,7 +9,7 @@ white_rabbit.flp: mbr.bin terriblefs.bin
 qemu: white_rabbit.flp
 	qemu-system-i386 -drive format=raw,file=white_rabbit.flp,if=ide,index=0 -chardev stdio,id=seabios -device isa-debugcon,iobase=0x402,chardev=seabios ${QEMU_OPTS}
 
-run: qemu
+run: debug qemu
 
 clean:
 	rm white_rabbit.bin white_rabbit.lst white_rabbit.flp mbr.bin mbr.lst white_rabbit_tmp.flp

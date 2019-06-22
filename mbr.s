@@ -1,8 +1,10 @@
     BITS 16
 
         %macro debug 1
+        %ifdef DEBUG_ENABLED
         call ndebug
         db %1
+        %endif
         %endmacro
 main:
 	mov ax, 0x07C0		; Set up 4K stack space after this bootloader
@@ -26,11 +28,13 @@ main:
 
         debug 0xFF
         ;; Hopefully, the first 32 entries of TerribleFS are in memory now
+        %ifdef DEBUG_ENABLED
         push word ds            ;segment
         push word 512           ;ptr
         push word 128           ;len
         call print_hex_block
         add sp, 6
+        %endif
         mov bx, 512
 .loop:
         ;debug 3
@@ -97,14 +101,19 @@ main:
         mov [dap.transfer_buffer_segment], cx
         mov word [dap.transfer_buffer_offset], 0
 
+        %ifdef ENABLE_DEBUG
         push word ds
         push word dap
         push word 0x0010        ;dap packet is 0x10 bytes
         call print_hex_block
         add sp, 6
-        
+
         clc
+        %endif
+
         call drive_read
+
+        %ifdef ENABLE_DEBUG
         jnc .data_read_not_carry
         debug 0x1C
         jmp .data_read_continue
@@ -113,51 +122,8 @@ main:
 .data_read_continue:     
 
         call print_crlf
-        call ((0x7C00 + 4096 + 4096 + 512)/16):0
-        push word [dap.transfer_buffer_segment]
-        push word [dap.transfer_buffer_offset]
-        push word 96            ;length of pretend kernel file
-        call print_hex_block
-        add sp, 6
-        
-        mov di, [ds:bx+12]
-        %if 0
-        mov cx, [ds:bx+14]
-        ;; AX and CX are a dword again
-        
-        cmp cx, 0
-        jne $+2
-        mov ax, 0xFFFF           ; if the dword is >= 0x10000, just set ax to 0xFFFF
-        
-        
-        mov [.igtmtiaycsm+1], ax
         %endif
-
-        mov ah, 0x0E
-        mov bh, 0              ; page number (???)
-        mov bl, 0x0F             ; white-on-black color
-        xor dx, dx
-        ;; index: dx
-        xchg bx, dx
-        ;; index: bx
-.read_print_loop:      
-        ;debug 8
-        mov al, [es:bx]
-        xchg bx, dx
-        ;; index: dx
-        int 0x10
-        ;call print_hex
-        xchg bx, dx
-        ;; index: bx
-        inc bx
-        ;xchg bx, ax
-        ;; index: ax
-.im_going_to_modify_this_instruction_and_you_cant_stop_me:       
-.igtmtiaycsm:    
-        cmp bx, di          ; 0x8fff is actually a junk value that will get written over above
-        ;xchg bx, ax
-        ;; index: bx
-        jne .read_print_loop
+        call ((0x7C00 + 4096 + 4096 + 512)/16):0
 end:
         ;; Should probably print an error message or smth
         debug 0x99
@@ -172,7 +138,7 @@ drive_read:
         mov dl, 0x80               ; We're probably the first drive, right?     
         int 0x13
         ret
-
+        %ifdef DEBUG_ENABLED
         ;; Input: al (byte to print), bh (page number), bl (color)
         ;; Clobbers: ah(set to 0x0E), al
 print_hex:
@@ -298,6 +264,8 @@ print_hex_block:
         pop bx
         pop ax
         ret
+
+        %endif
         
 disk_address_packet:
 dap:    

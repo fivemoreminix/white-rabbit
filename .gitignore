@@ -2,4 +2,5 @@
 *.iso
 *.bin
 *.lst
+*.elf
 make-terriblefs.mk

@@ -2,9 +2,10 @@
 # { terriblefs filename => [build dir filename, convert_linefeeds, num sectors] }
 FILES = {
   "MSRBTRCD" => :mbr,
-  "KERN_BIN" => ["kernel-commandline.bin", false, 2],
+  "KERN_BIN" => ["kernel-commandline.bin", false, 4],
   "BEEMOVIE" => ["bee-movie.txt", true, 128],
-  "BEEMVIE2" => ["back-to-back-bee-movie.txt", true, 256]
+  "BEEMVIE2" => ["back-to-back-bee-movie.txt", true, 256],
+  "TEST_BIN" => ["test.bin", false, 1]
 }
 
 out_fn = "terriblefs.bin"
