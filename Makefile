@@ -14,8 +14,12 @@ run: qemu
 clean:
 	rm white_rabbit.bin white_rabbit.lst white_rabbit.flp mbr.bin mbr.lst white_rabbit_tmp.flp
 
-%.bin %.lst: %.s
-	nasm -f bin -o $*.bin $*.s -l $*.lst
+%.bin: %.elf
+	objcopy -O binary $*.elf $*.bin
+
+# we make an elf file because that can be inserted into gdb to get symbols and all-around better debugging
+%.elf %.lst: %.s
+	nasm -f elf -g -o $*.elf $*.s -l $*.lst
 #nasm -f bin -o white_rabbit.bin fuckmewhatdowecallit.s
 
 make-terriblefs.mk: make-terriblefs.rb

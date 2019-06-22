@@ -10,7 +10,7 @@ def die(msg)
 end
 
 if ARGV[0] == "makefile"
-  puts "#{out_fn}: #{FILES.values.map{|v| v[0]}.join(" ")}
+  puts "#{out_fn}: #{$0} #{FILES.values.map{|v| v[0]}.join(" ")}
 \truby #{$0}"
   exit 0
 end
@@ -34,6 +34,7 @@ File.open(out_fn, "wb") do |f|
     f.write tfn
     f.write [sector_offset, File.size(rfn)].pack("L<L<")
     sector_offset += ss
+    die "I'm bad at writing" unless f.tell % 16 == 0
   end
   f.write 0x80.chr
   7.times{ f.write 0x00.chr }
@@ -41,7 +42,7 @@ File.open(out_fn, "wb") do |f|
 
   file_data_start = 256*16 # 256 entries, each entry is 16 bytes
   FILES.each do |tfn, (rfn, conv, ss, so)|
-    f.seek(file_data_start + (so*512))
+    f.seek((so*512)-512)
     if conv
       data = File.read(rfn)
       new_data = data.encode( data.encoding, universal_newline: true ).encode( data.encoding, crlf_newline: true )
