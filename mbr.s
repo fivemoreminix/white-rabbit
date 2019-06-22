@@ -112,6 +112,8 @@ main:
         debug 0x0C
 .data_read_continue:     
 
+        call print_crlf
+        call far [es:0]
         push word [dap.transfer_buffer_segment]
         push word [dap.transfer_buffer_offset]
         push word 96            ;length of pretend kernel file
