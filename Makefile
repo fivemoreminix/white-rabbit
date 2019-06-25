@@ -23,6 +23,6 @@ clean:
 #nasm -f bin -o white_rabbit.bin fuckmewhatdowecallit.s
 
 make-terriblefs.mk: make-terriblefs.rb
-	ruby make-terriblefs.rb makefile > make-terriblefs.mk
+	ruby -v && ruby make-terriblefs.rb makefile > make-terriblefs.mk
 
 -include make-terriblefs.mk
